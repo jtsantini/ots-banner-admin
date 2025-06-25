@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Banner Image Admin</title>
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+</head>
+<body>
+  <h1>Upload Banner Images</h1>
+  <button id="upload-btn">Upload Image</button>
+  <h2>Current Images</h2>
+  <div id="current-images"></div>
+  <h2>Banner Text Entries</h2>
+	<form id="texts-form">
+  	<!-- six text fields will be dynamically created here with the script at the bottom -->
+	</form>
+  <button id="save-texts">Save Texts</button>
+
+
+  <script>
+    // 1) Dynamically build six text inputs
+    const form = document.getElementById('texts-form');
+    for (let i = 1; i <= 6; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.style.marginBottom = '8px';
+
+      const label = document.createElement('label');
+      label.setAttribute('for', `text-${i}`);
+      label.textContent = `Message ${i}: `;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = `text-${i}`;
+      input.style.width = '80%';
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      form.appendChild(wrapper);
+    }
+
+    // 2) Fetch and populate existing texts on load
+    async function loadTexts() {
+      try {
+        const res = await fetch('/texts');
+        const texts = await res.json();
+        texts.forEach((t, i) => {
+          const input = document.getElementById(`text-${i+1}`);
+          if (input) input.value = t;
+        });
+      } catch (err) {
+        console.error('Error loading texts:', err);
+      }
+    }
+    loadTexts();
+
+    // 3) Save on button click
+    document.getElementById('save-texts').addEventListener('click', async () => {
+      const texts = [];
+      for (let i = 1; i <= 6; i++) {
+        texts.push(document.getElementById(`text-${i}`).value.trim());
+      }
+
+      try {
+        const res = await fetch('/texts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(texts)
+        });
+        if (res.ok) {
+          alert('Texts saved successfully!');
+        } else {
+          const { error } = await res.json();
+          alert('Error saving texts: ' + error);
+        }
+      } catch (err) {
+        console.error('Error posting texts:', err);
+        alert('Network error when saving texts');
+      }
+    });
+  </script>
+
+</body>
+</html>
