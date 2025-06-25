@@ -54,24 +54,27 @@
 
     // 3) Handle Delete button clicks via event delegation
     document.getElementById('current-images').addEventListener('click', async (e) => {
-      if (e.target.tagName === 'BUTTON') {
-        const publicId = e.target.dataset.id;
-        if (!confirm('Really delete this image?')) return;
-        try {
-          const resp = await fetch(`${API_BASE}/images/${publicId}`, { method: 'DELETE' });
-          if (resp.ok) {
-            alert('Image deleted');
-            loadImages();
-          } else {
-            const err = await resp.json();
-            alert('Delete failed: ' + err.error);
-          }
-        } catch (err) {
-          console.error('Error deleting image:', err);
-          alert('Network error deleting image');
-        }
+  if (e.target.tagName === 'BUTTON') {
+    const publicId = e.target.dataset.id;
+    if (!confirm('Really delete this image?')) return;
+    try {
+      const resp = await fetch(
+        `${API_BASE}/images/${encodeURIComponent(publicId)}`,
+        { method: 'DELETE' }
+      );
+      if (resp.ok) {
+        alert('Image deleted');
+        loadImages();
+      } else {
+        const { error } = await resp.json();
+        alert('Delete failed: ' + error);
       }
-    });
+    } catch (err) {
+      console.error('Error deleting image:', err);
+      alert('Network error deleting image');
+    }
+  }
+});
 
     loadImages();
 
