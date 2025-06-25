@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Banner Image Admin</title>
+  <title>Banner Admin</title>
   <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 </head>
 <body>
@@ -11,7 +11,7 @@
   
   <h2>Current Images</h2>
   <div id="current-images"></div>
-	
+    
   <h2>Banner Text Entries</h2>
   <form id="texts-form">
     <!-- Six inputs will be injected here -->
@@ -19,33 +19,63 @@
   <button id="save-texts">Save Texts</button>
 
   <script>
-    // 1) Configure the upload widget
+    const API_BASE = 'https://ots-banner-admin.onrender.com';
+
+    // 1) Configure the Cloudinary upload widget
     const widget = cloudinary.createUploadWidget({
-      cloudName: 'YOUR_CLOUD_NAME',
+      cloudName: 'showandtell',
       uploadPreset: 'banner_unsigned',
       folder: 'banner_images',
       multiple: false,
       maxFiles: 1
     }, (err, info) => {
-      if (info.event === 'success') loadImages();
+      if (!err && info.event === 'success') loadImages();
     });
 
     document.getElementById('upload-btn')
-            .addEventListener('click', () => widget.open());
+      .addEventListener('click', () => widget.open());
 
-    // 2) Fetch & show thumbnails
+    // 2) Fetch & display thumbnails with Delete buttons
     async function loadImages() {
-      const res = await fetch('/images');
-      const urls = await res.json();
-      const container = document.getElementById('current-images');
-      container.innerHTML = urls.map(u =>
-        `<img src="${u}" width="150" />`
-      ).join('');
+      try {
+        const res = await fetch(`${API_BASE}/images`);
+        const imgs = await res.json();
+        const container = document.getElementById('current-images');
+        container.innerHTML = imgs.map(img => `
+          <div class="thumb" style="display:inline-block;margin:8px;text-align:center">
+            <img src="${img.url}" width="150"><br>
+            <button data-id="${img.public_id}">Delete</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Error loading images:', err);
+      }
     }
 
+    // 3) Handle Delete button clicks via event delegation
+    document.getElementById('current-images').addEventListener('click', async (e) => {
+      if (e.target.tagName === 'BUTTON') {
+        const publicId = e.target.dataset.id;
+        if (!confirm('Really delete this image?')) return;
+        try {
+          const resp = await fetch(`${API_BASE}/images/${publicId}`, { method: 'DELETE' });
+          if (resp.ok) {
+            alert('Image deleted');
+            loadImages();
+          } else {
+            const err = await resp.json();
+            alert('Delete failed: ' + err.error);
+          }
+        } catch (err) {
+          console.error('Error deleting image:', err);
+          alert('Network error deleting image');
+        }
+      }
+    });
+
     loadImages();
-	  
-	      // 3) Dynamically build six text inputs
+
+    // 4) Dynamically build six text inputs
     const form = document.getElementById('texts-form');
     for (let i = 1; i <= 6; i++) {
       const wrapper = document.createElement('div');
@@ -65,10 +95,10 @@
       form.appendChild(wrapper);
     }
 
-    // 4) Fetch and populate existing texts on load
+    // 5) Fetch and populate existing texts on load
     async function loadTexts() {
       try {
-        const res = await fetch('/texts');
+        const res = await fetch(`${API_BASE}/texts`);
         const texts = await res.json();
         texts.forEach((t, i) => {
           const input = document.getElementById(`text-${i+1}`);
@@ -78,9 +108,10 @@
         console.error('Error loading texts:', err);
       }
     }
+
     loadTexts();
 
-    // 5) Save on button click
+    // 6) Save texts on button click
     document.getElementById('save-texts').addEventListener('click', async () => {
       const texts = [];
       for (let i = 1; i <= 6; i++) {
@@ -88,7 +119,7 @@
       }
 
       try {
-        const res = await fetch('/texts', {
+        const res = await fetch(`${API_BASE}/texts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(texts)

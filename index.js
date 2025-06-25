@@ -27,19 +27,30 @@ pool.query(`
 // 1) List images
 app.get('/images', async (req, res) => {
   try {
-    console.log('Listing resources with prefix:', 'banner_images');
     const result = await cloudinary.api.resources({
-      resource_type: 'image',
       type: 'upload',
-      prefix: 'banner_images',    // drop the trailing slash
+      prefix: 'banner_images',
       max_results: 100,
     });
-    console.log('Cloudinary result.resources:', result.resources.length, 'items');
-    const urls = result.resources.map(r => r.secure_url);
-    console.log('Returning URLs:', urls);
-    res.json(urls);
+    // now return an array of objects:
+    const imgs = result.resources.map(r => ({
+      url:       r.secure_url,
+      public_id: r.public_id
+    }));
+    res.json(imgs);
   } catch (err) {
-    console.error('Error fetching /images →', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/images/:public_id', async (req, res) => {
+  try {
+    const { public_id } = req.params;
+    // destroy the image on Cloudinary:
+    const result = await cloudinary.uploader.destroy(public_id, { invalidate: true });
+    res.json(result);
+  } catch (err) {
+    console.error('Error deleting image:', err);
     res.status(500).json({ error: err.message });
   }
 });
