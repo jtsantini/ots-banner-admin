@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Banner Image Admin</title>
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+</head>
+<body>
+  <h1>Upload Banner Images</h1>
+  <button id="upload-btn">Upload Image</button>
+  <h2>Current Images</h2>
+  <div id="current-images"></div>
+
+  <script>
+    // 1) Configure the upload widget
+    const widget = cloudinary.createUploadWidget({
+      cloudName: 'YOUR_CLOUD_NAME',
+      uploadPreset: 'banner_unsigned',
+      folder: 'banner_images',
+      multiple: false,
+      maxFiles: 1
+    }, (err, info) => {
+      if (info.event === 'success') loadImages();
+    });
+
+    document.getElementById('upload-btn')
+            .addEventListener('click', () => widget.open());
+
+    // 2) Fetch & show thumbnails
+    async function loadImages() {
+      const res = await fetch('/images');
+      const urls = await res.json();
+      const container = document.getElementById('current-images');
+      container.innerHTML = urls.map(u =>
+        `<img src="${u}" width="150" />`
+      ).join('');
+    }
+
+    loadImages();
+  </script>
+</body>
+</html>
